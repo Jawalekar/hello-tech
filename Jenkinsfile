@@ -4,9 +4,9 @@ pipeline {
     }
 
     environment {
-        acr_server = credentials('acr_server') // Azure Container Registry server
-        acr_username = credentials('acr_username') // ACR username
-        acr_password = credentials('acr_password') // ACR password
+        acr_server = credentials('acr_server')
+        acr_username = credentials('acr_username')
+        acr_password = credentials('acr_password')
     }
 
     stages {
