@@ -1,0 +1,86 @@
+pipeline {
+    agent {
+        label 'ubuntu' // Use a Linux-based agent
+    }
+    parameters {
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'qa', 'stage', 'prod'], description: 'Environment (e.g., dev, qa, stage, prod)')
+        string(name: 'TENANT', defaultValue: 'tenantA', description: 'Tenant name')
+        booleanParam(name: 'DEPLOY_ACR', defaultValue: false, description: 'Deploy ACR (true/false)')
+        booleanParam(name: 'DEPLOY_AKS', defaultValue: false, description: 'Deploy AKS (true/false)')
+        choice(name: 'LOCATION', choices: ['East US', 'Central US', 'West Europe', 'North Europe', 'South Central US'], description: 'Location for resource group')
+    }
+    environment {
+        ARM_CLIENT_ID = credentials('ms-azure-credentials-client-id') // Azure Service Principal Client ID
+        ARM_CLIENT_SECRET = credentials('ms-azure-credentials-client-secret') // Azure Service Principal Client Secret
+        ARM_SUBSCRIPTION_ID = credentials('ms-azure-credentials-subscription-id') // Azure Subscription ID
+        ARM_TENANT_ID = credentials('ms-azure-credentials-tenant-id') // Azure Tenant ID
+        PATH = "/usr/local/bin:${env.PATH}" // Ensure Terraform binary is in the PATH
+    }
+    stages {
+        stage('Verify Terraform Installation') {
+            steps {
+                sh '''
+                echo Verifying Terraform installation...
+                terraform --version
+                '''
+            }
+        }
+        stage('Terraform Init') {
+            steps {
+                sh '''
+                cd /home/jenkins/workspace/create-azure-resources/terraform
+                echo Initializing Terraform...
+                terraform init
+                '''
+            }
+        }
+        stage('Terraform Plan') {
+            steps {
+                sh """
+                cd /home/jenkins/workspace/create-azure-resources/terraform
+                echo Planning Terraform deployment...
+                terraform plan -refresh=false \
+                    -var="environment=${ENVIRONMENT}" \
+                    -var="tenant=${TENANT}" \
+                    -var="deploy_acr=${DEPLOY_ACR}" \
+                    -var="deploy_aks=${DEPLOY_AKS}" \
+                    -var="location=${LOCATION}" \
+                    -var="subscription_id=${ARM_SUBSCRIPTION_ID}"
+                """
+            }
+        }
+        stage('Terraform Apply') {
+            steps {
+                sh """
+                cd /home/jenkins/workspace/create-azure-resources/terraform
+                echo Applying Terraform configuration...
+                terraform apply -auto-approve \
+                    -var="environment=${ENVIRONMENT}" \
+                    -var="tenant=${TENANT}" \
+                    -var="deploy_acr=${DEPLOY_ACR}" \
+                    -var="deploy_aks=${DEPLOY_AKS}" \
+                    -var="location=${LOCATION}" \
+                    -var="subscription_id=${ARM_SUBSCRIPTION_ID}"
+                """
+            }
+        }
+    }
+    post {
+        always {
+            sh '''
+            cd /home/jenkins/workspace/create-azure-resources/terraform
+            echo Showing Terraform-managed resources...
+            terraform show
+
+            echo Terraform state file and lock file details:
+            ls -l terraform.tfstate*
+            '''
+        }
+        success {
+            echo 'Terraform deployment completed successfully!'
+        }
+        failure {
+            echo 'Terraform deployment failed!'
+        }
+    }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "hello-techie",
+  "version": "1.0.0",
+  "description": "A simple Hello Techie Node.js app",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "author": "Ronit",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

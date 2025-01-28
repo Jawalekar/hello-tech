@@ -1,0 +1,35 @@
+replicaCount: 2
+
+image:
+  repository: az204containerregistery.azurecr.io/hello-techie
+  tag: "latest"
+  pullPolicy: Always
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 80
+
+serviceAccount:
+  create: true   # Set to true to create a new ServiceAccount
+  name: ""       # Leave empty to use the release name as the ServiceAccount name
+
+vault:
+  annotations:
+    vault.hashicorp.com/agent-inject: 'true'
+    vault.hashicorp.com/agent-inject-secret-app-secrets: secret/data/app-secrets
+    vault.hashicorp.com/agent-inject-secret-image-pull: secret/data/acr-credentials
+    vault.hashicorp.com/role: combined-role
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 250m
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+

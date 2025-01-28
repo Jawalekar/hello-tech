@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-techie
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: hello-techie
+  annotations:
+    vault.hashicorp.com/agent-inject: 'true'
+    vault.hashicorp.com/agent-inject-secret-app-secrets: secret/data/app-secrets
+    vault.hashicorp.com/role: combined-role
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: hello-techie
+  template:
+    metadata:
+      labels:
+        app: hello-techie
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name | default .Release.Name }}
+      imagePullSecrets:
+        - name: acr-secret # Use the manually created ACR secret for pulling images
+      containers:
+        - name: hello-techie
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
